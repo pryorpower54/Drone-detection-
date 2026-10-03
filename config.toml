@@ -1,0 +1,69 @@
+# RF FPV drone detector configuration.
+# Passive, receive-only. Nothing here transmits.
+
+[scanner]
+# "hackrf" for real hardware, "sim" to run without hardware.
+type = "hackrf"
+bin_width_hz = 500000      # 500 kHz FFT bins
+lna_gain = 32              # 0-40 dB in 8 dB steps
+vga_gain = 30              # 0-62 dB in 2 dB steps
+amp = false                # HackRF front-end amp (+14 dB). Try true if signals are weak.
+
+[mount]
+# "servo" (gpiozero AngularServo on a Pi GPIO pin) or "sim".
+type = "servo"
+gpio_pin = 18              # BCM numbering
+min_angle = 0
+max_angle = 180
+step_deg = 15              # roughly half the antenna beamwidth
+settle_s = 0.4             # wait after moving before measuring
+sweeps_per_position = 3    # spectrum sweeps taken at each angle
+min_pulse_ms = 0.5         # servo pulse range, tune for your servo
+max_pulse_ms = 2.5
+
+[detector]
+learn_cycles = 2           # full pan cycles used to learn the background before alerting
+baseline_alpha = 0.1       # how fast the noise floor adapts (0-1)
+confirm_hits = 2           # band must trip in this many of the last N pan cycles...
+confirm_window = 3         # ...where N is this
+
+[alerts]
+ntfy_topic = ""            # e.g. "my-drone-alerts-7f3k". Empty = console/log only.
+ntfy_server = "https://ntfy.sh"
+cooldown_s = 120           # minimum gap between alerts for the same band
+log_file = "detections.csv"
+
+# Bands to watch. kind = "wideband" finds a continuous block of energy
+# (analog / digital video). kind = "hopping" counts short narrow bursts
+# scattered across the band (ELRS / Crossfire / FrSky control links).
+
+[[bands]]
+name = "5.8 GHz video"
+start_mhz = 5640
+stop_mhz = 5950
+kind = "wideband"
+threshold_db = 8
+min_width_mhz = 5
+
+[[bands]]
+name = "2.4 GHz control"
+start_mhz = 2400
+stop_mhz = 2480
+kind = "hopping"
+threshold_db = 10
+max_burst_width_mhz = 2
+min_bursts = 4
+
+[[bands]]
+name = "900 MHz control"
+start_mhz = 860
+stop_mhz = 930
+kind = "hopping"
+threshold_db = 10
+max_burst_width_mhz = 1.5
+min_bursts = 3
+
+[sim]
+# Only used when scanner.type / mount.type = "sim".
+drone_bearing_deg = 120
+drone_appears_after_cycles = 3
